@@ -378,11 +378,16 @@ double** many_mul(double*** mat, int n, int m){
 }
 
 double** get_eye_mat(int dim){
+    double** mat;
     double* arr = calloc(dim, sizeof(double));  // yoni check calloc + free
     for(int i=0;i<dim;i++){
         arr[i] = 1;
     }
-    return get_diag_mat(arr, dim);
+    //split the return
+    //return get_diag_mat(arr, dim);
+    mat= get_diag_mat(arr, dim);
+    free(arr);
+    return mat;
 }
 
 double** create_p_matrix(double s, double c, int x, int y, int n){
@@ -484,7 +489,18 @@ int* read_file_dimensions(char* filename){
 
 double** init_2d_array(int n, int m)
 {
-   //  yoni please modify this function
+   double *a;
+    double **mat;
+    int i;
+    int j;
+    a=calloc(n*m,sizeof(double));
+    assert(a!=NULL);
+    mat=calloc(n,sizeof(double*));
+    assert(mat!=NULL);
+    for (i=0;i<n;i++){
+        mat[i]= a + i*m;
+    }
+    return mat;
 }
 
 double** get_points_from_file(char* filename, int vec_len, int vec_num){
@@ -523,7 +539,7 @@ double** get_normalized_matrix(double** weighted, int dim){
     mul_columns(weighted, diag, dim);
 
     normalized = matrix_sub(get_eye_mat(dim), weighted, dim);
-
+    free(diag);
     return normalized;
 
 
@@ -598,7 +614,12 @@ EIGEN_LINK get_eigens_and_k(double** normalized, int dim, int k){   // yoni plea
     ret->eigen_vectors = V;
 
     printf("\nfinished jacobi\n");
-
+    
+    free(indexes);
+    free(V);
+    free(P);
+    free(eigen_vals);
+    free(deltas);
     return ret;
 }
 
