@@ -1,10 +1,9 @@
-
 #include <Math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 
-int epsilon = 0.001;
+double epsilon = 0.001;
 
 double* sub_vectors(double *vec1,double *vec2, int n){
     int i;
@@ -290,6 +289,13 @@ double* get_diag(double** mat, int n){
     return vec;
 }
 
+double get_abs(double num){
+    if(num<0){
+        return -1*num;
+    }
+    return num;
+}
+
 /*
 given a matrix return the the cordinates of the biggest element in the matrix that isn't in the diagonal
 */
@@ -305,8 +311,8 @@ int* get_max_indexes(double** mat, int n){
     for (i=0;i<n;i++){
         for(j=0;j<n;j++){
             if(i!=j){
-                if(abs(mat[i][j])>max){
-                    max=abs(mat[i][j]);
+                if(get_abs(mat[i][j])>max){
+                    max=get_abs(mat[i][j]);
                     x=i;
                     y=j;
                 }
@@ -319,11 +325,14 @@ int* get_max_indexes(double** mat, int n){
 }
 
 double compute_theta(double x, double y, double z){
-    return (x-y)/(2*z);
+    double ret;
+    ret = x-y;
+    ret = ret / (2*z);
+    return ret;
 }
 
-int sign(double x){
-    if (x>=0){
+double sign(double x){
+    if (x>=-0.000000000001){
         return 1;
     }
     else{
@@ -333,14 +342,12 @@ int sign(double x){
 }
 
 double compute_t(double x){
-    int si;
-    double ab;
+    double si;
     double sq;
 
     si=sign(x);
-    ab=x*si;
     sq=sqrt(pow(x,2)+1);
-    return (si)/(ab+sq);
+    return (si)/(get_abs(x)+sq);
 }
 
 double compute_c(double x){
@@ -396,8 +403,8 @@ double** create_p_matrix(double s, double c, int x, int y, int n){
     int i;
     int j;
     mat = get_eye_mat(n);
-    mat[x][y] = -s;
-    mat[y][x] = s;
+    mat[x][y] = s;
+    mat[y][x] = -s;
     mat[x][x] = c;
     mat[y][y] = c;
     return mat;
@@ -527,13 +534,18 @@ double** get_points_from_file(char* filename, int vec_len, int vec_num){
      return points;
 }
 
-
-double** get_normalized_matrix(double** weighted, int dim){
+double* get_diag_vec(double** weighted, int dim){
     double* diag = calloc(dim, sizeof(double));  // yoni check calloc + free
-    double** normalized;
+    
     for(int i=0; i<dim; i++){
         diag[i] = sum_line(weighted, dim, i);
     }
+    return diag;
+}
+
+
+double** get_normalized_matrix(double** weighted, double* diag, int dim){ // yoni check calloc + free
+    double** normalized;
 
     mul_lines(weighted, diag, dim);  // these 2 can be done in one line if we need to speed up
     mul_columns(weighted, diag, dim);
@@ -545,7 +557,56 @@ double** get_normalized_matrix(double** weighted, int dim){
 
 }
 
+double** deep_copy(double** mat, int dim){
+    double** ret;
+
+    ret = init_2d_array(dim,dim);
+
+    for(int i = 0;i<dim;i++){
+        for(int j=0;j<dim;j++){
+            ret[i][j] = mat[i][j];
+        }
+    }
+    return ret;
+
+}
+
+void compute_normalized(double** mat, int dim, double c, double s, int i, int j){
+
+    // handle memory issues
+
+
+    double temp;
+    double** copy;
+
+    copy = deep_copy(mat,dim);
+    for(int k=0;k<dim;k++){
+        if(k == i || k == j){
+        continue;}
+        temp = c*copy[k][i]-s*copy[k][j];
+        mat[k][i] = temp;
+        mat[i][k] = temp;
+    }
+
+    for(int t=0;t<dim;t++){
+        if(t == i || t == j){
+        continue;}
+        temp = c*copy[t][j]+s*copy[t][i];
+        mat[t][j] = temp;
+        mat[j][t] = temp;
+    }
+
+
+    mat[i][i] = (pow(c,2)*copy[i][i])+(pow(s,2)*copy[j][j])-(2*s*c*copy[i][j]);  
+    mat[j][j] = (pow(c,2)*copy[j][j])+(pow(s,2)*copy[i][i])+(2*s*c*copy[i][j]); 
+
+    mat[i][j] = 0;
+    mat[j][i] = 0;
+
+}
+
 typedef struct eigen_ret{
+    double * eigen_values;
     double** eigen_vectors;
     int k;
 } EIGEN;
@@ -558,6 +619,7 @@ EIGEN_LINK get_eigens_and_k(double** normalized, int dim, int k){   // yoni plea
     double temp;
     double** V;
     double** P;
+    double** t_P;
     double c, s, t, theta;
     double* deltas;
     double* eigen_vals;
@@ -568,41 +630,24 @@ EIGEN_LINK get_eigens_and_k(double** normalized, int dim, int k){   // yoni plea
         
     V = get_eye_mat(dim);
 
-    print_mat(normalized, dim, dim);
-
-            printf(" %lf \n",compute_off(normalized, dim));
-
     do{
-        printf("\niteration nmber %d\n",cnt++);
         temp = compute_off(normalized, dim);
         indexes = get_max_indexes(normalized, dim);
         i = indexes[0];
         j = indexes[1];
 
-
-
-        theta = compute_theta(normalized[i][i], normalized[j][j], normalized[i][j]);
+        theta = compute_theta(normalized[j][j], normalized[i][i], normalized[i][j]);
         t = compute_t(theta);
         c = compute_c(t);
-        s = c*t;
-
-        printf("found vals %lf %lf %lf %lf\n", theta,t,c,s);
+        s = t*c;
 
         P = create_p_matrix(s,c,i,j,dim);
 
-        print_mat(P, dim, dim);
-        
-        printf("\n");
+        V = sq_matrix_mul(V, P, dim);    // check what is the formula to compute P
 
-        V = sq_matrix_mul(V, P, dim);
+        compute_normalized(normalized,dim,c,s,i,j);
 
-        normalized = sq_matrix_mul(sq_matrix_mul(transpose(P, dim, dim) , normalized, dim ), P, dim);
-
-        print_mat(normalized, dim, dim);
-
-        printf(" %lf-%lf = %lf \n",temp,compute_off(normalized, dim), temp-compute_off(normalized, dim));
-
-    } while((temp-compute_off(normalized, dim)) >= 0.000001);
+    } while((temp-compute_off(normalized, dim)) > epsilon);
 
     if(!k){
         eigen_vals = get_diag(normalized, dim);
@@ -612,8 +657,7 @@ EIGEN_LINK get_eigens_and_k(double** normalized, int dim, int k){   // yoni plea
 
     ret->k = k;
     ret->eigen_vectors = V;
-
-    printf("\nfinished jacobi\n");
+    ret->eigen_values = get_diag(normalized, dim);
     
     free(indexes);
     free(V);
@@ -623,11 +667,8 @@ EIGEN_LINK get_eigens_and_k(double** normalized, int dim, int k){   // yoni plea
     return ret;
 }
 
-
 int main(int argv, char* args){
-    //int k=4;
-    char* filename;
-    char* goal;
+    int k;
     double** points;
     double** weighted;
     double** diagonal;
@@ -637,44 +678,75 @@ int main(int argv, char* args){
     int* dims;
     int vec_len, vec_num;
     EIGEN_LINK eigens;
+    char* goal;
+    char* file_name;
+    double* diag;
 
+   assert(argv==4);
+    k = (int)args[0];
+    goal = args[1];
+    file_name = args[2];
 
-/*
-    dims = read_file_dimensions(filename);
+    dims = read_file_dimensions(file_name);
     vec_len = dims[0];
     vec_num = dims[1];
 
 
-    points = get_points_from_file(filename, vec_len, vec_num);
+    points = get_points_from_file(file_name, vec_len, vec_num);
+
+    if(goal=="jacobi"){
+        eigens = get_eigens_and_k(points, vec_num, vec_num);
+        print_vec(eigens->eigen_values, vec_num);
+        print_mat(transpose(eigens->eigen_vectors, vec_num, vec_num), vec_num, vec_num);
+        return 1;
+
+    }
 
     weighted = weighted_matrix(points, vec_len, vec_num);
 
-    normalized = get_normalized_matrix(weighted, vec_num);
-    */
+    if(goal=="wam"){
+        print_mat(weighted, vec_num, vec_num);
+        return 1;
+    }
 
+    diag = get_diag_vec(weighted, vec_num);
+
+    if(goal=="ddg"){
+        print_mat(get_diag_mat(diag, vec_num), vec_num, vec_num);
+        return 1;
+    }
+
+    normalized = get_normalized_matrix(weighted,diag, vec_num);
+
+    if(goal=="lnorm"){
+        print_mat(normalized, vec_num, vec_num);
+        return 1;
+    }
+
+    /*
     double** arr = malloc(4*sizeof(double*));
     arr[0] = malloc(4*sizeof(double));
     arr[1] = malloc(4*sizeof(double));
     arr[2] = malloc(4*sizeof(double));
     arr[3]= malloc(4*sizeof(double));
     arr[0][0] = 4;
-    arr[0][1]=-30;
-    arr[0][2]=60;
+    arr[0][1] = -30;
+    arr[0][2] = 60;
     arr[0][3] = -35;
-    arr[1][0]=-30;
-    arr[1][1]=300;
-    arr[1][2]=-675;
+    arr[1][0] = -30;
+    arr[1][1] = 300;
+    arr[1][2] = -675;
     arr[1][3] = 420;
-    arr[2][0]=60;
-    arr[2][1]=-675;
-    arr[2][2]=1620;
+    arr[2][0] = 60;
+    arr[2][1] = -675;
+    arr[2][2] = 1620;
     arr[2][3] = -1050;
-    arr[3][0]=-35;
-    arr[3][1]=420;
-    arr[3][2]=-1050;
+    arr[3][0] = -35;
+    arr[3][1] = 420;
+    arr[3][2] = -1050;
     arr[3][3] = 700;
 
-        double** arr1 = malloc(2*sizeof(double*));
+    double** arr1 = malloc(2*sizeof(double*));
     arr1[0] = malloc(2*sizeof(double));
     arr1[1] = malloc(2*sizeof(double));
 
@@ -683,33 +755,35 @@ int main(int argv, char* args){
     arr1[1][0] = 1;
     arr1[1][1] =2;
 
-            double** arr2 = malloc(3*sizeof(double*));
-    arr1[0] = malloc(3*sizeof(double));
-    arr1[1] = malloc(3*sizeof(double));
-    arr1[2] = malloc(3*sizeof(double));
-    arr1[0][0] =2;
-    arr1[0][1] = 1;
-    arr1[0][2] = 1;
-    arr1[1][0] = 1;
-    arr1[1][1] =2;
-    arr1[1][2] = 1;
-    arr1[2][0] = 1;
-    arr1[2][1] =1;
-    arr1[2][2] = 2;
+    double** arr2 = malloc(3*sizeof(double*));
+    arr2[0] = malloc(3*sizeof(double));
+    arr2[1] = malloc(3*sizeof(double));
+    arr2[2] = malloc(3*sizeof(double));
+    arr2[0][0] =1;
+    arr2[0][1] = sqrt(2);
+    arr2[0][2] = 2;
+    arr2[1][0] = sqrt(2);
+    arr2[1][1] =3;
+    arr2[1][2] = sqrt(2);
+    arr2[2][0] = 2;
+    arr2[2][1] =sqrt(2);
+    arr2[2][2] = 1;
 
     vec_num = 4;
-    int k=4;
-    printf("gi\n");
+    k=4;
+    */
 
-    eigens = get_eigens_and_k(arr, vec_num, k);
-
-    k = eigens->k;
-
-    char sign;
-
-
+    eigens = get_eigens_and_k(normalized, vec_num, 0);
     normalize_mat(eigens->eigen_vectors, vec_num, k);
 
+    k = eigens->k;   
+
+    printf("%d\n",k); 
+
+    print_vec(eigens->eigen_values, vec_num);
+
     print_mat(eigens->eigen_vectors, vec_num, k);
-    
+
+    k_means(eigens->eigen_vectors,vec_num, k);
+
     }
