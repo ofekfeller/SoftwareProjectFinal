@@ -525,7 +525,10 @@ double** get_points_from_file(char* filename, int vec_len, int vec_num){
     while (!feof(f)) {
         if(fscanf(f,"%lf%c", &value, &c) == 2){
             points[i][j] = value;
-            if(c == '\n') i++;
+            if(c == '\n'){
+                i++;
+                j=0;
+            }
             if(c ==',') j++;
         }
      }
@@ -667,6 +670,47 @@ EIGEN_LINK get_eigens_and_k(double** normalized, int dim, int k){   // yoni plea
     return ret;
 }
 
+void kmeans_goal(double** points, char* goal, int vec_num, int dim){
+    EIGEN_LINK eigens;
+    double** weighted;
+    double** normalized;
+    double* diag;
+
+    if(goal=="jacobi"){
+        eigens = get_eigens_and_k(points, vec_num, vec_num);
+        print_vec(eigens->eigen_values, vec_num);
+        print_mat(transpose(eigens->eigen_vectors, vec_num, vec_num), vec_num, vec_num);
+
+    }
+
+    weighted = weighted_matrix(points, dim, vec_num);
+
+    if(goal=="wam"){
+        print_mat(weighted, vec_num, vec_num);
+    }
+
+    diag = get_diag_vec(weighted, vec_num);
+
+    if(goal=="ddg"){
+        print_mat(get_diag_mat(diag, vec_num), vec_num, vec_num);
+    }
+
+    normalized = get_normalized_matrix(weighted,diag, vec_num);
+
+    if(goal=="lnorm"){
+        print_mat(normalized, vec_num, vec_num);
+    }
+
+    free(normalized);
+    free(diag);
+    free(weighted);
+    free(eigens);
+}
+
+double** get_spk_points(double** points, int dim, int vec_num, int k){
+    
+}
+
 int main(int argv, char* args){
     int k;
     double** points;
@@ -692,7 +736,7 @@ int main(int argv, char* args){
     vec_num = dims[1];
 
 
-    points = get_points_from_file(file_name, vec_len, vec_num);
+    points = get_points_from_file(file_name, vec_num, vec_len);
 
     if(goal=="jacobi"){
         eigens = get_eigens_and_k(points, vec_num, vec_num);
