@@ -15,6 +15,17 @@ double* sub_vectors(double *vec1,double *vec2, int n){
     return vec;
 }
 
+void add_vectors(double *vec1, double *vec2, int n){
+    int i;
+    double tmp;
+
+    for (i = 0; i < n; i++)
+    {
+        tmp = vec1[i] + vec2[i];
+        vec1[i] = tmp;  
+    }
+}
+
 void print_vec(double* vec, int len){
     char sign;
     for(int i=0;i<len;i++){
@@ -397,6 +408,68 @@ double** get_eye_mat(int dim){
     return mat;
 }
 
+nt classify(double *vec,int num_cent, int size_vec, double centers[][size_vec]){
+    int min_ind=0;
+    double tmp_norm=0;
+    double min_norm;
+    int i;
+
+    min_norm = norm(sub_vectors(vec,centers[0],size_vec),size_vec);
+
+
+    for (i=1; i<num_cent; i++){
+
+        tmp_norm = norm(sub_vectors(vec,centers[i],size_vec),size_vec);
+        tmp_norm = sec_norm(vec,centers[i],size_vec); 
+
+        if (tmp_norm<min_norm){
+            min_norm=tmp_norm;
+            min_ind=i;
+        }
+    }
+    return min_ind;
+}
+
+void copy_array(double *source, double *new, int dim){
+    int i;
+    for (i = 0; i < dim; i++)
+    {
+        source[i] = new[i];
+    }
+}
+
+typedef struct cen_info
+{
+double *sum; 
+int cnt;
+} CEN_INFO;
+
+typedef CEN_INFO* CEN_LINK;
+
+CEN_LINK init_clusters(int k, int dim){
+    CEN_LINK clusters;
+    int i;
+
+    clusters = (CEN_INFO*)calloc(k, sizeof(CEN_INFO));
+    for ( i = 0; i < k; i++)
+    {
+        clusters[i].cnt = 0;
+        clusters[i].sum = calloc(dim, sizeof(double));
+    }
+
+    return clusters;
+}
+
+void update_center(double* origin, CEN_INFO cluster, int dim){
+    int i;
+
+    for (i = 0; i < dim; i++)
+    {
+        origin[i] = (cluster.sum[i] / cluster.cnt);
+    }
+    
+}
+
 double** create_p_matrix(double s, double c, int x, int y, int n){
     double *a;
     double **mat;
@@ -517,7 +590,7 @@ double** get_points_from_file(char* filename, int vec_len, int vec_num){
     char c;
 
 
-    points = init_2d_array(vec_len, vec_num);
+    points = init_2d_array(vec_num, vec_len);
 
     i=0;
     j=0;
@@ -700,6 +773,87 @@ void kmeans_goal(double** points, char* goal, int vec_num, int dim){
     if(goal=="lnorm"){
         print_mat(normalized, vec_num, vec_num);
     }
+    
+    if (goal=="spk"){
+        centers=init_2d_array(k,k);
+        
+        for(i=0;i<k;i++){
+            copy_array(centers[i], eigens->eigen_vectors[i], vec_len);
+        }
+        int vec_to_cen[vec_num];
+        CEN_LINK clusters = init_clusters(k, vec_len);
+
+        int center;
+
+        for (i = 0; i < vec_num; i++)
+        {
+        center = classify(eigens->eigen_vectors[i],  k, vec_len, centers);
+
+        vec_to_cen[i] = center;
+
+        add_vectors(clusters[center].sum , eigens->eigen_vectors[i], vec_len);
+
+        clusters[center].cnt++;
+
+        }
+
+        int bool;
+        int old_center;
+
+        bool = 1;
+        for (int i=0; i<max_iter-1;i++){
+
+            for(int j=0;j<vec_num;j++){
+
+                center = classify(eigens->eigen_vectors[j] ,k, vec_len, centers);
+
+                old_center = vec_to_cen[j];
+
+                if (old_center!=center){
+
+                    sub_vectors(clusters[old_center].sum, eigens->eigen_vectors[j], vec_len);
+
+                    add_vectors(clusters[center].sum , eigens->eigen_vectors[j], vec_len);
+
+                    clusters[center].cnt++;
+                    clusters[old_center].cnt--;
+
+                    vec_to_cen[j] = center;
+                    
+                    bool = 1;
+                }
+
+            }
+        
+            if (bool == 0){
+                
+                break;
+                
+            }  
+            
+            for (int j = 0; j < k; j++)
+            {
+                
+                update_center(centers[j], clusters[j], vec_len);
+                
+            }
+
+            bool = 0;
+        }
+        
+        char sign;
+
+        for (int i=0; i<k; i++){
+        
+            for (int j=0; j < k; j++)
+            {
+                if (j==vec_len-1) sign='\n';
+                else sign = ',';
+                
+                printf("%lf%c", centers[i][j], sign);
+            }
+        }
+    }
 
     free(normalized);
     free(diag);
@@ -708,7 +862,7 @@ void kmeans_goal(double** points, char* goal, int vec_num, int dim){
 }
 
 double** get_spk_points(double** points, int dim, int vec_num, int k){
-    
+    //not needed
 }
 
 int main(int argv, char* args){
