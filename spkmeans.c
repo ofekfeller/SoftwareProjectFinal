@@ -707,8 +707,23 @@ void kmeans_goal(double** points, char* goal, int vec_num, int dim){
     free(eigens);
 }
 
-double** get_spk_points(double** points, int dim, int vec_num, int k){
-    
+EIGEN_LINK get_spk_points(double** points, int dim, int vec_num, int k){  // handle memory
+    EIGEN_LINK eigens;
+    double** weighted;
+    double** normalized;
+    double* diag;
+
+    weighted = weighted_matrix(points, dim, vec_num);
+
+    diag = get_diag_vec(weighted, vec_num);
+
+    normalized = get_normalized_matrix(weighted,diag, vec_num);
+
+    eigens = get_eigens_and_k(normalized, vec_num, 0);
+
+    normalize_mat(eigens->eigen_vectors, vec_num, k);
+
+    return eigens;
 }
 
 int main(int argv, char* args){
@@ -767,66 +782,10 @@ int main(int argv, char* args){
         return 1;
     }
 
-    /*
-    double** arr = malloc(4*sizeof(double*));
-    arr[0] = malloc(4*sizeof(double));
-    arr[1] = malloc(4*sizeof(double));
-    arr[2] = malloc(4*sizeof(double));
-    arr[3]= malloc(4*sizeof(double));
-    arr[0][0] = 4;
-    arr[0][1] = -30;
-    arr[0][2] = 60;
-    arr[0][3] = -35;
-    arr[1][0] = -30;
-    arr[1][1] = 300;
-    arr[1][2] = -675;
-    arr[1][3] = 420;
-    arr[2][0] = 60;
-    arr[2][1] = -675;
-    arr[2][2] = 1620;
-    arr[2][3] = -1050;
-    arr[3][0] = -35;
-    arr[3][1] = 420;
-    arr[3][2] = -1050;
-    arr[3][3] = 700;
-
-    double** arr1 = malloc(2*sizeof(double*));
-    arr1[0] = malloc(2*sizeof(double));
-    arr1[1] = malloc(2*sizeof(double));
-
-    arr1[0][0] =2;
-    arr1[0][1] = 1;
-    arr1[1][0] = 1;
-    arr1[1][1] =2;
-
-    double** arr2 = malloc(3*sizeof(double*));
-    arr2[0] = malloc(3*sizeof(double));
-    arr2[1] = malloc(3*sizeof(double));
-    arr2[2] = malloc(3*sizeof(double));
-    arr2[0][0] =1;
-    arr2[0][1] = sqrt(2);
-    arr2[0][2] = 2;
-    arr2[1][0] = sqrt(2);
-    arr2[1][1] =3;
-    arr2[1][2] = sqrt(2);
-    arr2[2][0] = 2;
-    arr2[2][1] =sqrt(2);
-    arr2[2][2] = 1;
-
-    vec_num = 4;
-    k=4;
-    */
-
     eigens = get_eigens_and_k(normalized, vec_num, 0);
     normalize_mat(eigens->eigen_vectors, vec_num, k);
 
     k = eigens->k;   
-
-    printf("%d\n",k); 
-
-    print_vec(eigens->eigen_values, vec_num);
-
-    print_mat(eigens->eigen_vectors, vec_num, k);
 
     k_means(eigens->eigen_vectors,vec_num, k);
 
