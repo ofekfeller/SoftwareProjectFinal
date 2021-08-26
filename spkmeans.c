@@ -154,7 +154,7 @@ void print_vec(double* vec, int len){
     for(i=0;i<len;i++){
             if (i==len-1) sign='\n';
             else sign = ',';
-            printf("%lf%c", vec[i], sign);
+            printf("%.4f%c", vec[i], sign);
     }
 }
 
@@ -169,7 +169,7 @@ void print_mat(double** mat, int n, int m){
             if (j==m-1) sign='\n';
             else sign = ',';
             
-            printf("%lf%c", mat[i][j], sign);
+            printf("%.4f%c", mat[i][j], sign);
         }
     }
 
@@ -180,7 +180,6 @@ compute norm of a vector
 */
 double norm(double *vec, int size){
     double sum;
-    double res;
     int i;
     sum=0;
 
@@ -214,7 +213,9 @@ void normalize(double* vec, int size){
     }
 }
 
-// normalize matrix by its rows
+/*
+ normalize matrix by its rows
+ */
 void normalize_mat(double** mat, int rows, int cols){
     int i;
     for(i=0;i<rows;i++){
@@ -362,12 +363,12 @@ void div_square_vec(double* vec, int dim){
 /*
 given a vector of sums, return the diagonal degree matrix
 */
-double** get_diag_mat(double* vec, int n){  //yoni please make sure you dont pass the same indexes twice
-    double *a;
-    double **mat;
+double** get_diag_mat(double* vec, int n){
+    double** mat;
+    double* a;
     int i;
     int j;
-    a=calloc(n*n,sizeof(double));
+    a = calloc(n*n,sizeof(double));
     assert(a!=NULL);
     mat=calloc(n,sizeof(double*));
     assert(mat!=NULL);
@@ -526,22 +527,17 @@ double** many_mul(double*** mat, int n, int m){
 double** get_eye_mat(int dim){
     double** mat;
     int i;
-    double* arr = calloc(dim, sizeof(double));  // yoni check calloc + free
+    double* arr = calloc(dim, sizeof(double)); 
     for(i=0;i<dim;i++){
         arr[i] = 1;
     }
-    //split the return
-    //return get_diag_mat(arr, dim);
     mat= get_diag_mat(arr, dim);
     free(arr);
     return mat;
 }
 
 double** create_p_matrix(double s, double c, int x, int y, int n){
-    double *a;
     double **mat;
-    int i;
-    int j;
     mat = get_eye_mat(n);
     mat[x][y] = s;
     mat[y][x] = -s;
@@ -575,7 +571,7 @@ int determine_k(double* lst, int n){
             x=i;
         }
     }
-    return i;
+    return x;
 }
 
 /*
@@ -643,7 +639,6 @@ double** init_2d_array(int n, int m)
    double *a;
     double **mat;
     int i;
-    int j;
     a=calloc(n*m,sizeof(double));
     assert(a!=NULL);
     mat=calloc(n,sizeof(double*));  
@@ -683,7 +678,7 @@ double** get_points_from_file(char* filename, int vec_len, int vec_num){
 }
 
 double* get_diag_vec(double** weighted, int dim){
-    double* diag;  // yoni check calloc + free
+    double* diag;
     int i;
 
     diag = calloc(dim, sizeof(double));
@@ -694,10 +689,10 @@ double* get_diag_vec(double** weighted, int dim){
 }
 
 
-double** get_normalized_matrix(double** weighted, double* diag, int dim){ // yoni check calloc + free
+double** get_normalized_matrix(double** weighted, double* diag, int dim){ 
     double** normalized;
 
-    mul_lines(weighted, diag, dim);  // these 2 can be done in one line if we need to speed up
+    mul_lines(weighted, diag, dim); 
     mul_columns(weighted, diag, dim);
 
     normalized = matrix_sub(get_eye_mat(dim), weighted, dim);
@@ -713,7 +708,7 @@ double** deep_copy(double** mat, int dim){
 
     ret = init_2d_array(dim,dim);
 
-    for(i = 0;i<dim;i++){
+    for(i=0;i<dim;i++){
         for(j=0;j<dim;j++){
             ret[i][j] = mat[i][j];
         }
@@ -762,20 +757,18 @@ typedef struct eigen_ret{
 
 typedef EIGEN* EIGEN_LINK;
 
-EIGEN_LINK get_eigens_and_k(double** normalized, int dim, int k){   // yoni please fix the memory release on this func
+EIGEN_LINK get_eigens_and_k(double** normalized, int dim, int k){  
     int* indexes;
     double temp;
     double** V;
     double** P;
-    double** t_P;
     double c, s, t, theta;
     double* deltas;
     double* eigen_vals;
     EIGEN_LINK ret;
     int i;
     int j;
-    
-    int cnt =1 ;
+
     ret = malloc(sizeof(EIGEN));
         
     V = get_eye_mat(dim);
@@ -793,7 +786,7 @@ EIGEN_LINK get_eigens_and_k(double** normalized, int dim, int k){   // yoni plea
 
         P = create_p_matrix(s,c,i,j,dim);
 
-        V = sq_matrix_mul(V, P, dim);    // check what is the formula to compute P
+        V = sq_matrix_mul(V, P, dim);
 
         compute_normalized(normalized,dim,c,s,i,j);
 
@@ -817,13 +810,13 @@ EIGEN_LINK get_eigens_and_k(double** normalized, int dim, int k){   // yoni plea
     return ret;
 }
 
-static void kmeans_goal(double** points, char* goal, int vec_num, int dim){
+int kmeans_goal(double** points, char* goal, int vec_num, int dim){
     EIGEN_LINK eigens;
     double** weighted;
     double** normalized;
     double* diag;
 
-    if(goal=="jacobi"){
+    if(!strcmp(goal,"jacobi")){
         eigens = get_eigens_and_k(points, vec_num, vec_num);
         print_vec(eigens->eigen_values, vec_num);
         print_mat(transpose(eigens->eigen_vectors, vec_num, vec_num), vec_num, vec_num);
@@ -852,9 +845,11 @@ static void kmeans_goal(double** points, char* goal, int vec_num, int dim){
     free(diag);
     free(weighted);
     free(eigens);
+
+    return 0;
 }
 
-static EIGEN_LINK get_spk_points(double** points, int dim, int vec_num, int k){  // handle memory
+EIGEN_LINK get_spk_points(double** points, int dim, int vec_num, int k){
     EIGEN_LINK eigens;
     double** weighted;
     double** normalized;
@@ -873,7 +868,7 @@ static EIGEN_LINK get_spk_points(double** points, int dim, int vec_num, int k){ 
     return eigens;
 }
 
-static double** kmeans(double** points, double** centers, int vec_cnt, int k, int max_iter){
+double** kmeans(double** points, double** centers, int vec_cnt, int k, int max_iter){
 
     int i;
     int j;
@@ -1010,8 +1005,9 @@ int main(int argv, char** args){
     k = eigens->k;   
 
     centers = deep_copy(eigens->eigen_vectors, k);
-    
 
     kmeans(eigens->eigen_vectors, centers,vec_num, k, 300);
+
+    return 0;
 
     }
