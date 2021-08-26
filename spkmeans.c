@@ -2,8 +2,159 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
 
 double epsilon = 0.001;
+
+struct linked_list
+{
+    double data;
+    struct linked_list *next;
+
+};
+
+typedef struct linked_list ELEMENT;
+typedef ELEMENT* LINK;
+
+struct points_linked_list
+{
+    double *vec;
+    struct points_linked_list *next;
+
+};
+
+typedef struct points_linked_list MAIN_ELEMENT;
+typedef MAIN_ELEMENT* MAIN_LINK;
+
+
+typedef struct cen_info
+{
+double *sum;
+int cnt;
+} CEN_INFO;
+
+typedef CEN_INFO* CEN_LINK;
+
+CEN_LINK init_clusters(int k, int dim){
+    CEN_LINK clusters;
+    int i;
+
+    clusters = (CEN_INFO*)calloc(k, sizeof(CEN_INFO));
+    for ( i = 0; i < k; i++)
+    {
+        clusters[i].cnt = 0;
+        clusters[i].sum = calloc(dim, sizeof(double));
+        assert(clusters[i].sum != NULL);
+    }
+
+    return clusters;
+}
+/*
+void print_array(double *array, int len){
+    int i;
+
+    for ( i = 0; i < len; i++)
+    {
+        printf("%lf,\n",array[i]);
+    }
+}
+*/
+void copy_array(double *source, double *new, int dim){
+    int i;
+    for (i = 0; i < dim; i++)
+    {
+        source[i] = new[i];
+    }
+
+}
+
+void add_array(double *source, double *new, int dim){
+    int i;
+    double tmp;
+
+    for (i = 0; i < dim; i++)
+    {
+        tmp = source[i] + new[i];
+        source[i] = tmp;
+    }
+
+}
+
+void sub_array(double *source, double *new, int dim){
+    int i;
+    double tmp;
+
+    for (i = 0; i < dim; i++)
+    {
+        tmp = source[i] - new[i];
+        source[i] = tmp;
+    }
+
+}
+
+void update_center(double* origin, CEN_INFO cluster, int dim){
+    int i;
+
+    for (i = 0; i < dim; i++)
+    {
+        origin[i] = (cluster.sum[i] / cluster.cnt);
+    }
+
+}
+
+double sec_norm(double *array1,double *array2, int size){
+    double sum;
+    double res;
+    int i;
+    sum=0;
+
+    for (i = 0; i < size; i++)
+    {
+        res = array1[i]-array2[i];
+        sum += (res*res);
+    }
+
+    return sum;
+}
+
+
+int classify(double *vec,int num_cent, int size_vec, double **centers){
+    int min_ind=0;
+    double tmp_norm=0;
+    double min_norm;
+    int i;
+
+    min_norm = sec_norm(vec, centers[0], size_vec);
+
+
+    for (i=1; i<num_cent; i++){
+
+        tmp_norm = sec_norm(vec,centers[i],size_vec);
+
+        if (tmp_norm<min_norm){
+            min_norm=tmp_norm;
+            min_ind=i;
+        }
+    }
+    return min_ind;
+}
+
+int update_row(double * to, double * from, int k){
+     int i;
+    int cnt=0;
+    for (i=0; i<k;i++){
+        if (from[i]!=to[i]){
+            to[i]=from[i];
+            cnt++;
+        }
+    }
+    if (cnt>0){
+        return 1;
+    }
+    else{
+        return 0;
+    }
+}
 
 double* sub_vectors(double *vec1,double *vec2, int n){
     int i;
@@ -724,6 +875,83 @@ EIGEN_LINK get_spk_points(double** points, int dim, int vec_num, int k){  // han
     normalize_mat(eigens->eigen_vectors, vec_num, k);
 
     return eigens;
+}
+
+static double** kmeans(double** points, double** centers, int vec_cnt, int counter, int k, int max_iter){
+
+    int i;
+    int j;
+    int center;
+    int *vec_to_cen;
+    CEN_LINK clusters;
+    int bool;
+    int old_center;
+
+
+    vec_to_cen= calloc(vec_cnt,sizeof(int));
+    assert(vec_to_cen != NULL);
+
+    clusters = init_clusters(k, counter);
+
+    for (i = 0; i < vec_cnt; i++)
+    {
+       center = classify(points[i],  k, counter, centers);
+
+       vec_to_cen[i] = center;
+
+       add_array(clusters[center].sum , points[i], counter);
+
+       clusters[center].cnt++;
+
+    }
+
+    bool = 1;
+    for (i=0; i<max_iter-1;i++){
+
+        for(j=0;j<vec_cnt;j++){
+
+            center = classify(points[j] ,k, counter, centers);
+
+            old_center = vec_to_cen[j];
+
+            if (old_center!=center){
+
+                sub_array(clusters[old_center].sum, points[j], counter);
+
+                add_array(clusters[center].sum , points[j], counter);
+
+                clusters[center].cnt++;
+                clusters[old_center].cnt--;
+
+                vec_to_cen[j] = center;
+
+                bool = 1;
+            }
+
+        }
+
+        if (bool == 0){
+
+            break;
+
+        }
+
+        for (j = 0; j < k; j++)
+        {
+
+            update_center(centers[j], clusters[j], counter);
+
+        }
+
+        bool = 0;
+    }
+
+    free(vec_to_cen);
+    free(clusters);
+    free(points);
+
+    return centers;
+
 }
 
 int main(int argv, char* args){
