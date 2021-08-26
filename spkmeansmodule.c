@@ -170,7 +170,7 @@ static PyObject* fit(PyObject *self, PyObject *args)
 static PyMethodDef _methods[] = {
     FUNC(METH_VARARGS, fit, "Find k means clusters given points, early centers and some shitty integers"),
     FUNC(METH_VARARGS, execute_goal, "apply goal on the input given"),
-    FUNC(METH_VARARGS, get_spk_points, "return new points of spk process"),
+    FUNC(METH_VARARGS, spk_points, "return new points of spk process"),
     {NULL, NULL, 0, NULL}   /* sentinel */
 };
 
