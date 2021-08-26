@@ -9,10 +9,10 @@ typedef struct eigen_ret{
 
 typedef EIGEN* EIGEN_LINK;
 
-void kmeans_goal(double** points, char* goal, int vec_num, int dim);
+static void kmeans_goal(double** points, char* goal, int vec_num, int dim);
 
-EIGEN_LINK get_spk_points(double** points, int dim, int vec_num, int k);
+static EIGEN_LINK get_spk_points(double** points, int dim, int vec_num, int k);
 
-double** kmeans(double** points, double** centers, int vec_cnt, int k, int max_iter);
+static double** kmeans(double** points, double** centers, int vec_cnt, int k, int max_iter);
 
 #endif // SPK_H_

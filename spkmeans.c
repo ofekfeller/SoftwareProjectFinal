@@ -657,8 +657,9 @@ double** init_2d_array(int n, int m)
 double** get_points_from_file(char* filename, int vec_len, int vec_num){
     double** points;
     FILE* f;
-    int value,i,j;
+    int i,j;
     char c;
+    double value;
 
 
     points = init_2d_array(vec_num, vec_len);
@@ -667,7 +668,7 @@ double** get_points_from_file(char* filename, int vec_len, int vec_num){
     j=0;
     f = fopen(filename, "r");
     while (!feof(f)) {
-        if(fscanf(f,"%lf%c", &value, &c) == 2){
+        if(fscanf(f, "%lf%c", &value, &c) == 2){
             points[i][j] = value;
             if(c == '\n'){
                 i++;
@@ -962,8 +963,8 @@ int main(int argv, char** args){
     char* file_name;
     double* diag;
 
-   assert(argv==4);
-    k = (int)args[0];
+    assert(argv==4);
+    k = atoi(args[0]);
     goal = args[1];
     file_name = args[2];
 
