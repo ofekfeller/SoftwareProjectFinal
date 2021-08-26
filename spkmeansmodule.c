@@ -1,4 +1,3 @@
-//#include <spkmeans.h>
 #define PY_SSIZE_T_CLEAN
 #include <spkmeans.h>
 #include <Python.h>
@@ -15,7 +14,7 @@ typedef struct eigen_ret{
 
 typedef EIGEN* EIGEN_LINK;
 
-static void execute_goal(PyObject *self, PyObject *args){
+static void execute_goal(PyObject *self, PyObject *args){  //fix memory issues
     int dim;
     int vec_num;
     char* goal;
@@ -87,8 +86,6 @@ static PyObject* spk_points(PyObject *self, PyObject *args)
     }
 
     res = get_spk_points(points, vec_num, dim, _K);
-
-    normalize_mat(res->eigen_vectors, vec_num, res->k);
 
     PyObject * all_points = PyList_New(vec_num);
     PyObject * vector;
