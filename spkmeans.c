@@ -49,24 +49,6 @@ CEN_LINK init_clusters(int k, int dim){
 
     return clusters;
 }
-/*
-void print_array(double *array, int len){
-    int i;
-
-    for ( i = 0; i < len; i++)
-    {
-        printf("%lf,\n",array[i]);
-    }
-}
-*/
-void copy_array(double *source, double *new, int dim){
-    int i;
-    for (i = 0; i < dim; i++)
-    {
-        source[i] = new[i];
-    }
-
-}
 
 void add_array(double *source, double *new, int dim){
     int i;
@@ -634,7 +616,10 @@ int* read_file_dimensions(char* filename){
 
     while (!feof(f)) {
         if(fscanf(f,"%lf%c", &value, &c) == 2){
-            if(c == '\n') vec_num++;
+            if(c == '\n'){
+                vec_num++;
+                vec_len = 0;
+            } 
             if(c ==',') vec_len++;
         }
      }
@@ -653,7 +638,7 @@ double** init_2d_array(int n, int m)
     int j;
     a=calloc(n*m,sizeof(double));
     assert(a!=NULL);
-    mat=calloc(n,sizeof(double*));
+    mat=calloc(n,sizeof(double*));  
     assert(mat!=NULL);
     for (i=0;i<n;i++){
         mat[i]= a + i*m;
@@ -668,7 +653,7 @@ double** get_points_from_file(char* filename, int vec_len, int vec_num){
     char c;
 
 
-    points = init_2d_array(vec_len, vec_num);
+    points = init_2d_array(vec_num, vec_len);
 
     i=0;
     j=0;
@@ -877,7 +862,7 @@ EIGEN_LINK get_spk_points(double** points, int dim, int vec_num, int k){  // han
     return eigens;
 }
 
-static double** kmeans(double** points, double** centers, int vec_cnt, int k, int max_iter){
+double** kmeans(double** points, double** centers, int vec_cnt, int k, int max_iter){
 
     int i;
     int j;
@@ -954,7 +939,7 @@ static double** kmeans(double** points, double** centers, int vec_cnt, int k, in
 
 }
 
-int main(int argv, char* args){
+int main(int argv, char** args){
     int k;
     double** points;
     double** weighted;
@@ -962,6 +947,7 @@ int main(int argv, char* args){
     double** normalized;
     double** eigen_vec;
     double** u_mat;
+    double** centers;
     int* dims;
     int vec_len, vec_num;
     EIGEN_LINK eigens;
@@ -1015,9 +1001,9 @@ int main(int argv, char* args){
 
     k = eigens->k;   
 
-    // need to deep copy the first k centers and send to k_means
+    centers = deep_copy(eigens->eigen_vectors, k);
     
 
-    k_means(eigens->eigen_vectors,vec_num, k);
+    kmeans(eigens->eigen_vectors, centers,vec_num, k, 300);
 
     }

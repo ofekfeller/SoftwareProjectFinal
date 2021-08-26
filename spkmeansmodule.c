@@ -1,32 +1,25 @@
 #define PY_SSIZE_T_CLEAN
-#include <spkmeans.h>
-#include <Python.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include "spkmeans.h"
+#include <Python.h>
 
-typedef struct eigen_ret{
-    double * eigen_values;
-    double** eigen_vectors;
-    int k;
-} EIGEN;
-
-typedef EIGEN* EIGEN_LINK;
-
-static void execute_goal(PyObject *self, PyObject *args){  //fix memory issues
+static int execute_goal(PyObject *self, PyObject *args){  //fix memory issues
     int dim;
     int vec_num;
     char* goal;
+    int i,j;
 
-    PyObject *_points;
+    PyObject *_points, *val;
 
     if(!PyArg_ParseTuple(args, "Os", &_points, &goal)) {   //make sure we can parse goal as char* and not pythonic object
-        return NULL;
+        return 1;
     }
 
     if(!PyList_Check(_points)){
-        return NULL;
+        return 1;
     }
 
     /* Get the size of it and build the output list*/
@@ -45,14 +38,15 @@ static void execute_goal(PyObject *self, PyObject *args){  //fix memory issues
         }
     }
 
-    kmeans_goal(goal, points, vec_num, dim);
+    kmeans_goal(points, goal, vec_num, dim);
 
+    return 0;
 
 }
 
 static PyObject* spk_points(PyObject *self, PyObject *args)
 {
-    int dim, i;
+    int dim, i, j;
     int vec_num;
     Py_ssize_t _K;
     EIGEN_LINK res;
@@ -148,7 +142,7 @@ static PyObject* fit(PyObject *self, PyObject *args)
 
     _max_iter = PyList_Size(max_iter);
 
-    double **clusters = kmeans(points, centers, vec_num,dim, _K, _max_iter);
+    double **clusters = kmeans(points, centers, vec_num, _K, _max_iter);
 
     PyObject * final_centroids = PyList_New(_K);
     PyObject * centroid;
@@ -187,7 +181,7 @@ static struct PyModuleDef _moduledef = {
 };
 
 PyMODINIT_FUNC
-PyInit_mykmeanssp(void)
+PyInit_spkmeansmodule(void)
 {
     return PyModule_Create(&_moduledef);
 }
