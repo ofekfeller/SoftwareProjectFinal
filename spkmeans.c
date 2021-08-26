@@ -806,7 +806,7 @@ EIGEN_LINK get_eigens_and_k(double** normalized, int dim, int k){   // yoni plea
     return ret;
 }
 
-void kmeans_goal(double** points, char* goal, int vec_num, int dim){
+static void kmeans_goal(double** points, char* goal, int vec_num, int dim){
     EIGEN_LINK eigens;
     double** weighted;
     double** normalized;
@@ -843,7 +843,7 @@ void kmeans_goal(double** points, char* goal, int vec_num, int dim){
     free(eigens);
 }
 
-EIGEN_LINK get_spk_points(double** points, int dim, int vec_num, int k){  // handle memory
+static EIGEN_LINK get_spk_points(double** points, int dim, int vec_num, int k){  // handle memory
     EIGEN_LINK eigens;
     double** weighted;
     double** normalized;
@@ -862,7 +862,7 @@ EIGEN_LINK get_spk_points(double** points, int dim, int vec_num, int k){  // han
     return eigens;
 }
 
-double** kmeans(double** points, double** centers, int vec_cnt, int k, int max_iter){
+static double** kmeans(double** points, double** centers, int vec_cnt, int k, int max_iter){
 
     int i;
     int j;
