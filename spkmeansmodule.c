@@ -1,4 +1,3 @@
-//#include <spkmeans.h>
 #define PY_SSIZE_T_CLEAN
 #include <spkmeans.h>
 #include <Python.h>
