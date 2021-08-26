@@ -877,7 +877,7 @@ EIGEN_LINK get_spk_points(double** points, int dim, int vec_num, int k){  // han
     return eigens;
 }
 
-static double** kmeans(double** points, double** centers, int vec_cnt, int counter, int k, int max_iter){
+static double** kmeans(double** points, double** centers, int vec_cnt, int k, int max_iter){
 
     int i;
     int j;
@@ -891,15 +891,15 @@ static double** kmeans(double** points, double** centers, int vec_cnt, int count
     vec_to_cen= calloc(vec_cnt,sizeof(int));
     assert(vec_to_cen != NULL);
 
-    clusters = init_clusters(k, counter);
+    clusters = init_clusters(k, k);
 
     for (i = 0; i < vec_cnt; i++)
     {
-       center = classify(points[i],  k, counter, centers);
+       center = classify(points[i],  k, k, centers);
 
        vec_to_cen[i] = center;
 
-       add_array(clusters[center].sum , points[i], counter);
+       add_array(clusters[center].sum , points[i], k);
 
        clusters[center].cnt++;
 
@@ -910,15 +910,15 @@ static double** kmeans(double** points, double** centers, int vec_cnt, int count
 
         for(j=0;j<vec_cnt;j++){
 
-            center = classify(points[j] ,k, counter, centers);
+            center = classify(points[j] ,k, k, centers);
 
             old_center = vec_to_cen[j];
 
             if (old_center!=center){
 
-                sub_array(clusters[old_center].sum, points[j], counter);
+                sub_array(clusters[old_center].sum, points[j], k);
 
-                add_array(clusters[center].sum , points[j], counter);
+                add_array(clusters[center].sum , points[j], k);
 
                 clusters[center].cnt++;
                 clusters[old_center].cnt--;
@@ -939,7 +939,7 @@ static double** kmeans(double** points, double** centers, int vec_cnt, int count
         for (j = 0; j < k; j++)
         {
 
-            update_center(centers[j], clusters[j], counter);
+            update_center(centers[j], clusters[j], k);
 
         }
 
@@ -1014,6 +1014,9 @@ int main(int argv, char* args){
     normalize_mat(eigens->eigen_vectors, vec_num, k);
 
     k = eigens->k;   
+
+    // need to deep copy the first k centers and send to k_means
+    
 
     k_means(eigens->eigen_vectors,vec_num, k);
 
