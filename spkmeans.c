@@ -1,4 +1,4 @@
-#include <Math.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -122,7 +122,7 @@ int classify(double *vec,int num_cent, int size_vec, double **centers){
 }
 
 int update_row(double * to, double * from, int k){
-     int i;
+    int i;
     int cnt=0;
     for (i=0; i<k;i++){
         if (from[i]!=to[i]){
@@ -149,8 +149,9 @@ double* sub_vectors(double *vec1,double *vec2, int n){
 }
 
 void print_vec(double* vec, int len){
+    int i;
     char sign;
-    for(int i=0;i<len;i++){
+    for(i=0;i<len;i++){
             if (i==len-1) sign='\n';
             else sign = ',';
             printf("%lf%c", vec[i], sign);
@@ -159,10 +160,11 @@ void print_vec(double* vec, int len){
 
 void print_mat(double** mat, int n, int m){
     char sign;
+    int i, j;
 
-    for (int i=0; i<n; i++){
+    for (i=0; i<n; i++){
     
-        for (int j=0; j < m; j++)
+        for (j=0; j < m; j++)
         {
             if (j==m-1) sign='\n';
             else sign = ',';
@@ -214,7 +216,8 @@ void normalize(double* vec, int size){
 
 // normalize matrix by its rows
 void normalize_mat(double** mat, int rows, int cols){
-    for(int i=0;i<rows;i++){
+    int i;
+    for(i=0;i<rows;i++){
         normalize(mat[i], cols);
     }
 }
@@ -277,8 +280,9 @@ double** sq_matrix_mul(double** mat1, double** mat2, int n){
 given a vector and matrix- multiply each matrix row with the corresponding vector value
 */
 void mul_lines(double** mat, double* vec, int dim){
-    for(int i=0; i<dim; i++){
-          for(int j=0; j<dim; j++){
+    int j,i;
+    for(i=0; i<dim; i++){
+          for(j=0; j<dim; j++){
               mat[i][j] *= vec[i];
     }
 }
@@ -288,8 +292,9 @@ void mul_lines(double** mat, double* vec, int dim){
 given a vector and matrix- multiply each matrix column with the corresponding vector value
 */
 void mul_columns(double** mat, double* vec, int dim){
-    for(int i=0; i<dim; i++){
-          for(int j=0; j<dim; j++){
+    int i,j;
+    for(i=0; i<dim; i++){
+          for(j=0; j<dim; j++){
               mat[i][j] *= vec[j];
     }
 }
@@ -347,7 +352,8 @@ double* vector_sum(double** mat, int n){
 given vector, calculate for each val - 1/sqrt(val)
 */
 void div_square_vec(double* vec, int dim){
-    for(int i=0; i<dim; i++){
+    int i;
+    for(i=0; i<dim; i++){
         vec[i] = 1/sqrt(vec[i]);
     }
 }
@@ -519,8 +525,9 @@ double** many_mul(double*** mat, int n, int m){
 
 double** get_eye_mat(int dim){
     double** mat;
+    int i;
     double* arr = calloc(dim, sizeof(double));  // yoni check calloc + free
-    for(int i=0;i<dim;i++){
+    for(i=0;i<dim;i++){
         arr[i] = 1;
     }
     //split the return
@@ -586,7 +593,8 @@ int partition(int *array, int low, int high) {
   
   int pivot = array[high];
   int i = (low - 1);
-  for (int j = low; j < high; j++) {
+  int j;
+  for (j = low; j < high; j++) {
     if (array[j] <= pivot) {
       i++;
       swap(&array[i], &array[j]);
@@ -674,9 +682,11 @@ double** get_points_from_file(char* filename, int vec_len, int vec_num){
 }
 
 double* get_diag_vec(double** weighted, int dim){
-    double* diag = calloc(dim, sizeof(double));  // yoni check calloc + free
-    
-    for(int i=0; i<dim; i++){
+    double* diag;  // yoni check calloc + free
+    int i;
+
+    diag = calloc(dim, sizeof(double));
+    for(i=0; i<dim; i++){
         diag[i] = sum_line(weighted, dim, i);
     }
     return diag;
@@ -698,11 +708,12 @@ double** get_normalized_matrix(double** weighted, double* diag, int dim){ // yon
 
 double** deep_copy(double** mat, int dim){
     double** ret;
+    int j,i;
 
     ret = init_2d_array(dim,dim);
 
-    for(int i = 0;i<dim;i++){
-        for(int j=0;j<dim;j++){
+    for(i = 0;i<dim;i++){
+        for(j=0;j<dim;j++){
             ret[i][j] = mat[i][j];
         }
     }
@@ -711,15 +722,13 @@ double** deep_copy(double** mat, int dim){
 }
 
 void compute_normalized(double** mat, int dim, double c, double s, int i, int j){
-
-    // handle memory issues
-
+    int t,k;
 
     double temp;
     double** copy;
 
     copy = deep_copy(mat,dim);
-    for(int k=0;k<dim;k++){
+    for(k=0;k<dim;k++){
         if(k == i || k == j){
         continue;}
         temp = c*copy[k][i]-s*copy[k][j];
@@ -727,7 +736,7 @@ void compute_normalized(double** mat, int dim, double c, double s, int i, int j)
         mat[i][k] = temp;
     }
 
-    for(int t=0;t<dim;t++){
+    for(t=0;t<dim;t++){
         if(t == i || t == j){
         continue;}
         temp = c*copy[t][j]+s*copy[t][i];
@@ -753,7 +762,6 @@ typedef struct eigen_ret{
 typedef EIGEN* EIGEN_LINK;
 
 EIGEN_LINK get_eigens_and_k(double** normalized, int dim, int k){   // yoni please fix the memory release on this func
-    int i,j;
     int* indexes;
     double temp;
     double** V;
@@ -763,6 +771,8 @@ EIGEN_LINK get_eigens_and_k(double** normalized, int dim, int k){   // yoni plea
     double* deltas;
     double* eigen_vals;
     EIGEN_LINK ret;
+    int i;
+    int j;
     
     int cnt =1 ;
     ret = malloc(sizeof(EIGEN));
@@ -821,19 +831,19 @@ static void kmeans_goal(double** points, char* goal, int vec_num, int dim){
 
     weighted = weighted_matrix(points, dim, vec_num);
 
-    if(goal=="wam"){
+    if(!strcmp(goal,"wam")){
         print_mat(weighted, vec_num, vec_num);
     }
 
     diag = get_diag_vec(weighted, vec_num);
 
-    if(goal=="ddg"){
+    if(!strcmp(goal,"ddg")){
         print_mat(get_diag_mat(diag, vec_num), vec_num, vec_num);
     }
 
     normalized = get_normalized_matrix(weighted,diag, vec_num);
 
-    if(goal=="lnorm"){
+    if(!strcmp(goal,"lnorm")){
         print_mat(normalized, vec_num, vec_num);
     }
 
@@ -943,10 +953,7 @@ int main(int argv, char** args){
     int k;
     double** points;
     double** weighted;
-    double** diagonal;
     double** normalized;
-    double** eigen_vec;
-    double** u_mat;
     double** centers;
     int* dims;
     int vec_len, vec_num;
@@ -967,7 +974,7 @@ int main(int argv, char** args){
 
     points = get_points_from_file(file_name, vec_num, vec_len);
 
-    if(goal=="jacobi"){
+    if(!strcmp(goal,"jacobi")){
         eigens = get_eigens_and_k(points, vec_num, vec_num);
         print_vec(eigens->eigen_values, vec_num);
         print_mat(transpose(eigens->eigen_vectors, vec_num, vec_num), vec_num, vec_num);
@@ -977,21 +984,21 @@ int main(int argv, char** args){
 
     weighted = weighted_matrix(points, vec_len, vec_num);
 
-    if(goal=="wam"){
+    if(!strcmp(goal,"wam")){
         print_mat(weighted, vec_num, vec_num);
         return 1;
     }
 
     diag = get_diag_vec(weighted, vec_num);
 
-    if(goal=="ddg"){
+    if(!strcmp(goal,"ddg")){
         print_mat(get_diag_mat(diag, vec_num), vec_num, vec_num);
         return 1;
     }
 
     normalized = get_normalized_matrix(weighted,diag, vec_num);
 
-    if(goal=="lnorm"){
+    if(!strcmp(goal,"lnorm")){
         print_mat(normalized, vec_num, vec_num);
         return 1;
     }
