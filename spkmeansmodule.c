@@ -102,13 +102,13 @@ static PyObject* spk_points(PyObject *self, PyObject *args)
 static PyObject* fit(PyObject *self, PyObject *args)
 {
 
-    PyObject *_points, *_centers, *max_iter, *val;
-    Py_ssize_t dim, vec_num, i, j, _K, _max_iter;
+    PyObject *_points, *_centers, *val;
+    Py_ssize_t dim, vec_num, i, j, _K;
 
-    if(!PyArg_ParseTuple(args, "OOO", &_points,&_centers, &max_iter)) {
+    if(!PyArg_ParseTuple(args, "OO", &_points,&_centers)) {
         return NULL;
     }
-    if(!PyList_Check(_points) || !PyList_Check(_centers) || !PyList_Check(max_iter)){
+    if(!PyList_Check(_points) || !PyList_Check(_centers)){
         return NULL;
     }
 
@@ -140,9 +140,7 @@ static PyObject* fit(PyObject *self, PyObject *args)
         }
     }
 
-    _max_iter = PyList_Size(max_iter);
-
-    double **clusters = kmeans(points, centers, vec_num, _K, _max_iter);
+    double **clusters = kmeans(points, centers, vec_num, _K, 300);
 
     PyObject * final_centroids = PyList_New(_K);
     PyObject * centroid;
