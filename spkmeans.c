@@ -820,6 +820,7 @@ int kmeans_goal(double** points, char* goal, int vec_num, int dim){
         eigens = get_eigens_and_k(points, vec_num, vec_num);
         print_vec(eigens->eigen_values, vec_num);
         print_mat(transpose(eigens->eigen_vectors, vec_num, vec_num), vec_num, vec_num);
+        return 0;
 
     }
 
@@ -833,12 +834,14 @@ int kmeans_goal(double** points, char* goal, int vec_num, int dim){
 
     if(!strcmp(goal,"ddg")){
         print_mat(get_diag_mat(diag, vec_num), vec_num, vec_num);
+        return 0;
     }
 
     normalized = get_normalized_matrix(weighted,diag, vec_num);
 
     if(!strcmp(goal,"lnorm")){
         print_mat(normalized, vec_num, vec_num);
+        return 0;
     }
 
     free(normalized);
@@ -974,7 +977,7 @@ int main(int argv, char** args){
         eigens = get_eigens_and_k(points, vec_num, vec_num);
         print_vec(eigens->eigen_values, vec_num);
         print_mat(transpose(eigens->eigen_vectors, vec_num, vec_num), vec_num, vec_num);
-        return 1;
+        return 0;
 
     }
 
@@ -982,21 +985,21 @@ int main(int argv, char** args){
 
     if(!strcmp(goal,"wam")){
         print_mat(weighted, vec_num, vec_num);
-        return 1;
+        return 0;
     }
 
     diag = get_diag_vec(weighted, vec_num);
 
     if(!strcmp(goal,"ddg")){
         print_mat(get_diag_mat(diag, vec_num), vec_num, vec_num);
-        return 1;
+        return 0;
     }
 
     normalized = get_normalized_matrix(weighted,diag, vec_num);
 
     if(!strcmp(goal,"lnorm")){
         print_mat(normalized, vec_num, vec_num);
-        return 1;
+        return 0;
     }
 
     eigens = get_eigens_and_k(normalized, vec_num, 0);
