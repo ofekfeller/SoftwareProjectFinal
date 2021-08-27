@@ -815,11 +815,13 @@ int kmeans_goal(double** points, char* goal, int vec_num, int dim){
     double** weighted;
     double** normalized;
     double* diag;
+    double** ddg;
 
     if(!strcmp(goal,"jacobi")){
         eigens = get_eigens_and_k(points, vec_num, vec_num);
         print_vec(eigens->eigen_values, vec_num);
         print_mat(transpose(eigens->eigen_vectors, vec_num, vec_num), vec_num, vec_num);
+        free(eigens);
         return 0;
 
     }
@@ -828,12 +830,18 @@ int kmeans_goal(double** points, char* goal, int vec_num, int dim){
 
     if(!strcmp(goal,"wam")){
         print_mat(weighted, vec_num, vec_num);
+        free(weighted);
+        return 0;
     }
 
     diag = get_diag_vec(weighted, vec_num);
 
     if(!strcmp(goal,"ddg")){
-        print_mat(get_diag_mat(diag, vec_num), vec_num, vec_num);
+        ddg = get_diag_mat(diag, vec_num);
+        print_mat(ddg, vec_num, vec_num);
+        free(diag);
+        free(weighted);
+        free(ddg);
         return 0;
     }
 
@@ -841,14 +849,13 @@ int kmeans_goal(double** points, char* goal, int vec_num, int dim){
 
     if(!strcmp(goal,"lnorm")){
         print_mat(normalized, vec_num, vec_num);
+        free(diag);
+        free(weighted);
+        free(normalized);
         return 0;
     }
 
-    free(normalized);
-    free(diag);
-    free(weighted);
-    free(eigens);
-
+  
     return 0;
 }
 
