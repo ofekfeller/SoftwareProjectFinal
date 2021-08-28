@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <string.h>
 
-double epsilon = 0.001;
+double epsilon = pow(10, -15);
 
 struct linked_list
 {
@@ -317,8 +317,13 @@ double** weighted_matrix(double** points, int dim, int vec_num){
     }
     for (i=0; i<vec_num;i++){
         for (j=i; j<vec_num; j++){
+            if(i==j){
+                mat[i][j]=0;
+            }
+            else{
             mat[i][j]=p_exp(points[i],points[j],dim);
             mat[j][i]=mat[i][j];
+            }
         }
     }
     return mat;
@@ -693,7 +698,7 @@ double** get_points_from_file(char* filename, int vec_len, int vec_num){
             if(c ==',') j++;
         }
      }
-     fclose(f);
+    fclose(f);
 
      return points;
 }
@@ -819,7 +824,6 @@ EIGEN_LINK get_eigens_and_k(double** normalized, int dim, int k){
     eigen_vals = get_diag(normalized, dim);
 
     quickSort(eigen_vals, t_V,0, dim-1);
-
 
     if(!k){
         deltas = get_deltas(eigen_vals, dim);
@@ -1001,18 +1005,11 @@ int main(int argv, char** args){
     goal = args[2];
     file_name = args[3];
 
-    printf("got args- open %s\n", file_name);
-
-
     dims = read_file_dimensions(file_name);
     vec_len = dims[0];
     vec_num = dims[1];
 
-    printf("got dims %d %d\n",vec_len, vec_num);
-
-    points = get_points_from_file(file_name, vec_num, vec_len);
-
-    printf("got points\n");
+    points = get_points_from_file(file_name, vec_len, vec_num);
 
     if(!strcmp(goal,"jacobi")){
         eigens = get_eigens_and_k(points, vec_num, vec_num);
@@ -1036,7 +1033,8 @@ int main(int argv, char** args){
         return 0;
     }
 
-    normalized = get_normalized_matrix(weighted,diag, vec_num);
+    div_square_vec(diag, vec_num);
+    normalized = get_normalized_matrix(weighted, diag, vec_num);
 
     if(!strcmp(goal,"lnorm")){
         print_mat(normalized, vec_num, vec_num);
@@ -1044,13 +1042,16 @@ int main(int argv, char** args){
     }
 
     eigens = get_eigens_and_k(normalized, vec_num, 0);
+  
     normalize_mat(eigens->eigen_vectors, vec_num, k);
 
     k = eigens->k;   
 
     centers = deep_copy(eigens->eigen_vectors, k);
 
+    if(!strcmp(goal,"spk")){
     kmeans(eigens->eigen_vectors, centers,vec_num, k, 300);
+    }
 
     return 0;
 
