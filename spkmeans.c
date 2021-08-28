@@ -471,7 +471,7 @@ double compute_theta(double x, double y, double z){
     return ret;
 }
 
-double sign(double x){
+double get_sign(double x){
     if (x>=-0.000000000001){
         return 1;
     }
@@ -485,7 +485,7 @@ double compute_t(double x){
     double si;
     double sq;
 
-    si=sign(x);
+    si=get_sign(x);
     sq=sqrt(pow(x,2)+1);
     return (si)/(get_abs(x)+sq);
 }
@@ -554,7 +554,7 @@ double* get_deltas(double* lst, int n){
     assert(n_list!=NULL);
     for (i=0; i<n-1; i++){
         x=lst[i]-lst[i+1];
-        n_list[i]=x*sign(x);
+        n_list[i]=x*get_sign(x);
     }
     return n_list;
 }
@@ -585,19 +585,19 @@ void d_swap(double **a, double **b) {
 
 
 /*
-function to swap elements
+function to swap double elements
 */ 
-void swap(int *a, int *b) {
-  int t = *a;
+void swap(double *a, double *b) {
+  double t = *a;
   *a = *b;
   *b = t;
 }
 
 /* function to find the partition position
 */
-int partition(int *array, double** vects, int low, int high) {
+int partition(double *array, double** vects, int low, int high) {
   
-  int pivot = array[high];
+  double pivot = array[high];
   int i = (low - 1);
   int j;
   for (j = low; j < high; j++) {
@@ -612,7 +612,7 @@ int partition(int *array, double** vects, int low, int high) {
   return (i + 1);
 }
 
-void quickSort(int *array,double** vects, int low, int high) {
+void quickSort(double *array,double** vects, int low, int high) {
   if (low < high) {
     int pi = partition(array, vects, low, high);
     quickSort(array, vects, low, pi - 1);
@@ -626,17 +626,26 @@ int* read_file_dimensions(char* filename){
     char c;
     int vec_len;
     int vec_num;
-    FILE* f = fopen(filename, "r");
+    int flag;
 
+    FILE* f = fopen(filename, "r");
+    flag=0;
+    vec_len=0;
+    vec_num=0;
     arr = calloc(2, sizeof(int));
 
     while (!feof(f)) {
         if(fscanf(f,"%lf%c", &value, &c) == 2){
             if(c == '\n'){
+                if (flag==0){
+                    vec_len++;
+                    flag=1;
+                }
                 vec_num++;
-                vec_len = 0;
             } 
-            if(c ==',') vec_len++;
+            if(c ==',' && !flag){
+             vec_len++;
+            }
         }
      }
      fclose(f);
@@ -822,7 +831,7 @@ EIGEN_LINK get_eigens_and_k(double** normalized, int dim, int k){
     ret->eigen_values = eigen_vals;
     
     free(indexes);
-    free(t_V)
+    free(t_V);
     free(V);
     free(P);
     free(deltas);
@@ -988,16 +997,22 @@ int main(int argv, char** args){
     double* diag;
 
     assert(argv==4);
-    k = atoi(args[0]);
-    goal = args[1];
-    file_name = args[2];
+    k = atoi(args[1]);
+    goal = args[2];
+    file_name = args[3];
+
+    printf("got args- open %s\n", file_name);
+
 
     dims = read_file_dimensions(file_name);
     vec_len = dims[0];
     vec_num = dims[1];
 
+    printf("got dims %d %d\n",vec_len, vec_num);
 
     points = get_points_from_file(file_name, vec_num, vec_len);
+
+    printf("got points\n");
 
     if(!strcmp(goal,"jacobi")){
         eigens = get_eigens_and_k(points, vec_num, vec_num);

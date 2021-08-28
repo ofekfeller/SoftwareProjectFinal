@@ -1,0 +1,8 @@
+README.md
+setup.py
+spkmeans.c
+spkmeansmodule.c
+spkmeansmodule.egg-info/PKG-INFO
+spkmeansmodule.egg-info/SOURCES.txt
+spkmeansmodule.egg-info/dependency_links.txt
+spkmeansmodule.egg-info/top_level.txt
