@@ -575,6 +575,16 @@ int determine_k(double* lst, int n){
 }
 
 /*
+function to double arrays elements
+*/
+void d_swap(double **a, double **b) {
+  double* t = *a;
+  *a = *b;
+  *b = t;
+}
+
+
+/*
 function to swap elements
 */ 
 void swap(int *a, int *b) {
@@ -585,7 +595,7 @@ void swap(int *a, int *b) {
 
 /* function to find the partition position
 */
-int partition(int *array, int low, int high) {
+int partition(int *array, double** vects, int low, int high) {
   
   int pivot = array[high];
   int i = (low - 1);
@@ -594,17 +604,19 @@ int partition(int *array, int low, int high) {
     if (array[j] <= pivot) {
       i++;
       swap(&array[i], &array[j]);
+      d_swap(&vects[i], &vects[j]);
     }
   }
   swap(&array[i + 1], &array[high]);
+  d_swap(&vects[i+1], &vects[high]);
   return (i + 1);
 }
 
-void quickSort(int *array, int low, int high) {
+void quickSort(int *array,double** vects, int low, int high) {
   if (low < high) {
-    int pi = partition(array, low, high);
-    quickSort(array, low, pi - 1);
-    quickSort(array, pi + 1, high);
+    int pi = partition(array, vects, low, high);
+    quickSort(array, vects, low, pi - 1);
+    quickSort(array, vects, pi + 1, high);
   }
 }
 
@@ -761,6 +773,7 @@ EIGEN_LINK get_eigens_and_k(double** normalized, int dim, int k){
     int* indexes;
     double temp;
     double** V;
+    double** t_V;
     double** P;
     double c, s, t, theta;
     double* deltas;
@@ -792,20 +805,26 @@ EIGEN_LINK get_eigens_and_k(double** normalized, int dim, int k){
 
     } while((temp-compute_off(normalized, dim)) > epsilon);
 
+    t_V = transpose(V,dim, dim);
+
+    eigen_vals = get_diag(normalized, dim);
+
+    quickSort(eigen_vals, t_V,0, dim-1);
+
+
     if(!k){
-        eigen_vals = get_diag(normalized, dim);
         deltas = get_deltas(eigen_vals, dim);
         k = determine_k(deltas,dim-1);
     }
 
     ret->k = k;
-    ret->eigen_vectors = V;
-    ret->eigen_values = get_diag(normalized, dim);
+    ret->eigen_vectors = transpose(t_V, dim, dim);
+    ret->eigen_values = eigen_vals;
     
     free(indexes);
+    free(t_V)
     free(V);
     free(P);
-    free(eigen_vals);
     free(deltas);
     return ret;
 }
