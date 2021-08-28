@@ -327,7 +327,7 @@ double** weighted_matrix(double** points, int dim, int vec_num){
 given a matrix and an index, return the sum of the elements in the row of the index in the matrix
 */
 double sum_line(double **mat, int n, int index){
-    int sum=0;
+    double sum=0;
     int i;
     for (i=0; i<n; i++){
         sum+=mat[index][i];
@@ -561,7 +561,7 @@ double* get_deltas(double* lst, int n){
 
 int determine_k(double* lst, int n){
     int x,i,y;
-    int max;
+    double max;
     x=0;
     y=(n+1)/2;
     max=lst[0];
