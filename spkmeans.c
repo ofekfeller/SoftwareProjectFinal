@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <string.h>
 
-double epsilon = pow(10, -15);
+double epsilon = 0.001;
 
 struct linked_list
 {
@@ -199,6 +199,7 @@ double p_exp(double *vec1,double *vec2, int size){
     double *vec=sub_vectors(vec1,vec2,size);
     my_norm=norm(vec, size);
     my_norm=-my_norm/2;
+    free(vec);
     return exp(my_norm);
 }
 /*
@@ -317,13 +318,8 @@ double** weighted_matrix(double** points, int dim, int vec_num){
     }
     for (i=0; i<vec_num;i++){
         for (j=i; j<vec_num; j++){
-            if(i==j){
-                mat[i][j]=0;
-            }
-            else{
             mat[i][j]=p_exp(points[i],points[j],dim);
             mat[j][i]=mat[i][j];
-            }
         }
     }
     return mat;
@@ -332,7 +328,7 @@ double** weighted_matrix(double** points, int dim, int vec_num){
 given a matrix and an index, return the sum of the elements in the row of the index in the matrix
 */
 double sum_line(double **mat, int n, int index){
-    double sum=0;
+    int sum=0;
     int i;
     for (i=0; i<n; i++){
         sum+=mat[index][i];
@@ -417,8 +413,20 @@ double** transpose(double **mat, int n, int m){
 
 double** wrap(double **mat1,double **mat2, int n){
     double** mat;
-    mat=sq_matrix_mul(sq_matrix_mul(transpose(mat1,n,n),mat2,n),mat1,n);
-    return mat;
+    double** mat_t;
+    double** mat3;
+    double** mat4;
+    mat_t=transpose(mat1,n,n);
+    mat3=sq_matrix_mul(mat_t,mat2,n);
+    mat4=sq_matrix_mul(mat3,mat1,n);
+    //mat=sq_matrix_mul(sq_matrix_mul(transpose(mat1,n,n),mat2,n),mat1,n);
+    free(mat[0]);
+    free(mat);
+    free(mat_t[0]);
+    free(mat_t);
+    free(mat3[0]);
+    free(mat3);
+    return mat4;
 }
 /*
 given a matrix, return it's diagonal
@@ -516,6 +524,7 @@ double compute_off(double** mat, int n){
     double* diag;
     diag=get_diag(mat,n);
     x=pow(norm(diag,n),2);
+    free(diag);
     return square_sum(mat,n) - x;
 }
 
@@ -566,7 +575,7 @@ double* get_deltas(double* lst, int n){
 
 int determine_k(double* lst, int n){
     int x,i,y;
-    double max;
+    int max;
     x=0;
     y=(n+1)/2;
     max=lst[0];
@@ -632,25 +641,39 @@ int* read_file_dimensions(char* filename){
     int vec_len;
     int vec_num;
     int flag;
-
+    int read;
     FILE* f = fopen(filename, "r");
+    
     flag=0;
     vec_len=0;
     vec_num=0;
     arr = calloc(2, sizeof(int));
 
     while (!feof(f)) {
-        if(fscanf(f,"%lf%c", &value, &c) == 2){
+        read=fscanf(f,"%lf%c", &value, &c);
+        if(read == 2){
             if(c == '\n'){
+                
+                if (flag==0){
+                    
+                    vec_len++;
+                    flag=1;
+                }
+                vec_num++;  
+            } 
+            if(c ==',' && !flag){
+                
+                vec_len++;
+            }
+        }
+        else if(read ==1){
+            if (c=='\0'){
                 if (flag==0){
                     vec_len++;
                     flag=1;
                 }
-                vec_num++;
-            } 
-            if(c ==',' && !flag){
-             vec_len++;
             }
+            vec_num++;
         }
      }
      fclose(f);
@@ -681,7 +704,7 @@ double** get_points_from_file(char* filename, int vec_len, int vec_num){
     int i,j;
     char c;
     double value;
-
+    int read;
 
     points = init_2d_array(vec_num, vec_len);
 
@@ -689,7 +712,8 @@ double** get_points_from_file(char* filename, int vec_len, int vec_num){
     j=0;
     f = fopen(filename, "r");
     while (!feof(f)) {
-        if(fscanf(f, "%lf%c", &value, &c) == 2){
+        read = fscanf(f, "%lf%c", &value, &c);
+        if(read == 2){
             points[i][j] = value;
             if(c == '\n'){
                 i++;
@@ -698,7 +722,7 @@ double** get_points_from_file(char* filename, int vec_len, int vec_num){
             if(c ==',') j++;
         }
      }
-    fclose(f);
+     fclose(f);
 
      return points;
 }
@@ -717,12 +741,15 @@ double* get_diag_vec(double** weighted, int dim){
 
 double** get_normalized_matrix(double** weighted, double* diag, int dim){ 
     double** normalized;
+    double** eye;
 
     mul_lines(weighted, diag, dim); 
     mul_columns(weighted, diag, dim);
-
-    normalized = matrix_sub(get_eye_mat(dim), weighted, dim);
+    eye=get_eye_mat(dim);
+    normalized = matrix_sub(eye, weighted, dim);
     free(diag);
+    // why do we do free(diag)?
+    free(eye);
     return normalized;
 
 
@@ -772,7 +799,7 @@ void compute_normalized(double** mat, int dim, double c, double s, int i, int j)
 
     mat[i][j] = 0;
     mat[j][i] = 0;
-
+    free(copy);
 }
 
 typedef struct eigen_ret{
@@ -825,6 +852,7 @@ EIGEN_LINK get_eigens_and_k(double** normalized, int dim, int k){
 
     quickSort(eigen_vals, t_V,0, dim-1);
 
+
     if(!k){
         deltas = get_deltas(eigen_vals, dim);
         k = determine_k(deltas,dim-1);
@@ -835,10 +863,14 @@ EIGEN_LINK get_eigens_and_k(double** normalized, int dim, int k){
     ret->eigen_values = eigen_vals;
     
     free(indexes);
+    free(t_V[0]);
     free(t_V);
+    free(V[0]);
     free(V);
+    free(P[0]);
     free(P);
     free(deltas);
+    //free(eigen_vals);
     return ret;
 }
 
@@ -862,6 +894,7 @@ int kmeans_goal(double** points, char* goal, int vec_num, int dim){
 
     if(!strcmp(goal,"wam")){
         print_mat(weighted, vec_num, vec_num);
+        free(weighted[0]);
         free(weighted);
         return 0;
     }
@@ -872,7 +905,9 @@ int kmeans_goal(double** points, char* goal, int vec_num, int dim){
         ddg = get_diag_mat(diag, vec_num);
         print_mat(ddg, vec_num, vec_num);
         free(diag);
+        free(weighted[0]);
         free(weighted);
+        free(ddg[0]);
         free(ddg);
         return 0;
     }
@@ -882,7 +917,9 @@ int kmeans_goal(double** points, char* goal, int vec_num, int dim){
     if(!strcmp(goal,"lnorm")){
         print_mat(normalized, vec_num, vec_num);
         free(diag);
+        free(weighted[0]);
         free(weighted);
+        free(normalized[0]);
         free(normalized);
         return 0;
     }
@@ -906,6 +943,12 @@ EIGEN_LINK get_spk_points(double** points, int dim, int vec_num, int k){
     eigens = get_eigens_and_k(normalized, vec_num, 0);
 
     normalize_mat(eigens->eigen_vectors, vec_num, k);
+
+    free(weighted[0]);
+    free(weighted);
+    free(normalized[0]);
+    free(normalized);
+    free(diag);
 
     return eigens;
 }
@@ -981,8 +1024,6 @@ double** kmeans(double** points, double** centers, int vec_cnt, int k, int max_i
 
     free(vec_to_cen);
     free(clusters);
-    free(points);
-
     return centers;
 
 }
@@ -993,6 +1034,8 @@ int main(int argv, char** args){
     double** weighted;
     double** normalized;
     double** centers;
+    double** transp;
+    double** diag_mat;
     int* dims;
     int vec_len, vec_num;
     EIGEN_LINK eigens;
@@ -1005,16 +1048,26 @@ int main(int argv, char** args){
     goal = args[2];
     file_name = args[3];
 
+    printf("got args- open %s\n", file_name);
+
+
     dims = read_file_dimensions(file_name);
     vec_len = dims[0];
     vec_num = dims[1];
 
-    points = get_points_from_file(file_name, vec_len, vec_num);
+    printf("got dims %d %d\n",vec_len, vec_num);
+
+    points = get_points_from_file(file_name, vec_num, vec_len);
+
+    printf("got points\n");
 
     if(!strcmp(goal,"jacobi")){
         eigens = get_eigens_and_k(points, vec_num, vec_num);
         print_vec(eigens->eigen_values, vec_num);
-        print_mat(transpose(eigens->eigen_vectors, vec_num, vec_num), vec_num, vec_num);
+        transp=transpose(eigens->eigen_vectors, vec_num, vec_num);
+        print_mat(transp, vec_num, vec_num);
+        free(transp[0]);
+        free(transp);
         return 0;
 
     }
@@ -1029,12 +1082,14 @@ int main(int argv, char** args){
     diag = get_diag_vec(weighted, vec_num);
 
     if(!strcmp(goal,"ddg")){
-        print_mat(get_diag_mat(diag, vec_num), vec_num, vec_num);
+        diag_mat=get_diag_mat(diag, vec_num);
+        print_mat(diag_mat, vec_num, vec_num);
+        free(diag_mat[0]);
+        free(diag_mat);
         return 0;
     }
 
-    div_square_vec(diag, vec_num);
-    normalized = get_normalized_matrix(weighted, diag, vec_num);
+    normalized = get_normalized_matrix(weighted,diag, vec_num);
 
     if(!strcmp(goal,"lnorm")){
         print_mat(normalized, vec_num, vec_num);
@@ -1042,16 +1097,28 @@ int main(int argv, char** args){
     }
 
     eigens = get_eigens_and_k(normalized, vec_num, 0);
-  
     normalize_mat(eigens->eigen_vectors, vec_num, k);
 
     k = eigens->k;   
 
     centers = deep_copy(eigens->eigen_vectors, k);
 
-    if(!strcmp(goal,"spk")){
     kmeans(eigens->eigen_vectors, centers,vec_num, k, 300);
-    }
+
+    free(dims);
+    free(weighted[0]);
+    free(weighted);
+    free(normalized[0]);
+    free(normalized);
+    free(points[0]);
+    free(points);
+    free(centers[0]);
+    free(centers);
+    free(eigens->eigen_values);
+    free(eigens->eigen_vectors[0]);
+    free(eigens->eigen_vectors);
+    free(diag);
+    
 
     return 0;
 
