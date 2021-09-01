@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <string.h>
 
-double epsilon = pow(10, -15);
+
 
 struct linked_list
 {
@@ -204,11 +204,12 @@ double p_exp(double *vec1,double *vec2, int size){
 /*
 divide each cordinate of the vector by the norm of the vector
 */
-void normalize(double* vec, int size){
+void normalize(double* vec, int size_){
     int i;
     double vec_norm;
-    vec_norm=norm(vec,size);
-    for (i=0;i<size;i++){
+    vec_norm=norm(vec,size_);
+
+    for (i=0;i<size_;i++){
         vec[i]=vec[i]/vec_norm;
     }
 }
@@ -795,6 +796,9 @@ EIGEN_LINK get_eigens_and_k(double** normalized, int dim, int k){
     EIGEN_LINK ret;
     int i;
     int j;
+    double epsilon;
+
+    epsilon = pow(10, -15);
 
     ret = malloc(sizeof(EIGEN));
         
@@ -827,7 +831,8 @@ EIGEN_LINK get_eigens_and_k(double** normalized, int dim, int k){
 
     if(!k){
         deltas = get_deltas(eigen_vals, dim);
-        k = determine_k(deltas,dim-1);
+        k = determine_k(deltas,dim-1) + 1;
+        free(deltas);
     }
 
     ret->k = k;
@@ -838,7 +843,6 @@ EIGEN_LINK get_eigens_and_k(double** normalized, int dim, int k){
     free(t_V);
     free(V);
     free(P);
-    free(deltas);
     return ret;
 }
 
@@ -868,6 +872,7 @@ int kmeans_goal(double** points, char* goal, int vec_num, int dim){
 
     diag = get_diag_vec(weighted, vec_num);
 
+
     if(!strcmp(goal,"ddg")){
         ddg = get_diag_mat(diag, vec_num);
         print_mat(ddg, vec_num, vec_num);
@@ -876,6 +881,8 @@ int kmeans_goal(double** points, char* goal, int vec_num, int dim){
         free(ddg);
         return 0;
     }
+
+    div_square_vec(diag, vec_num);
 
     normalized = get_normalized_matrix(weighted,diag, vec_num);
 
@@ -901,16 +908,18 @@ EIGEN_LINK get_spk_points(double** points, int dim, int vec_num, int k){
 
     diag = get_diag_vec(weighted, vec_num);
 
+    div_square_vec(diag, vec_num);
+
     normalized = get_normalized_matrix(weighted,diag, vec_num);
 
-    eigens = get_eigens_and_k(normalized, vec_num, 0);
+    eigens = get_eigens_and_k(normalized, vec_num, k);
 
-    normalize_mat(eigens->eigen_vectors, vec_num, k);
+    normalize_mat(eigens->eigen_vectors, vec_num, eigens->k);
 
     return eigens;
 }
 
-double** kmeans(double** points, double** centers, int vec_cnt, int k, int max_iter){
+void kmeans(double** points, double** centers, int vec_cnt, int k, int max_iter){
 
     int i;
     int j;
@@ -919,7 +928,6 @@ double** kmeans(double** points, double** centers, int vec_cnt, int k, int max_i
     CEN_LINK clusters;
     int bool;
     int old_center;
-
 
     vec_to_cen= calloc(vec_cnt,sizeof(int));
     assert(vec_to_cen != NULL);
@@ -983,7 +991,7 @@ double** kmeans(double** points, double** centers, int vec_cnt, int k, int max_i
     free(clusters);
     free(points);
 
-    return centers;
+    print_mat(centers,k,k);
 
 }
 
@@ -1042,12 +1050,13 @@ int main(int argv, char** args){
     }
 
     eigens = get_eigens_and_k(normalized, vec_num, 0);
+
+    k = eigens->k;  
   
     normalize_mat(eigens->eigen_vectors, vec_num, k);
 
-    k = eigens->k;   
-
     centers = deep_copy(eigens->eigen_vectors, k);
+
 
     if(!strcmp(goal,"spk")){
     kmeans(eigens->eigen_vectors, centers,vec_num, k, 300);

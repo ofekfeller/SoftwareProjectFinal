@@ -13,6 +13,6 @@ int kmeans_goal(double** points, char* goal, int vec_num, int dim);
 
 EIGEN_LINK get_spk_points(double** points, int dim, int vec_num, int k);
 
-double** kmeans(double** points, double** centers, int vec_cnt, int k, int max_iter);
+void kmeans(double** points, double** centers, int vec_cnt, int k, int max_iter);
 
 #endif // SPK_H_

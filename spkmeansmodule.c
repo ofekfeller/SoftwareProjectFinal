@@ -6,7 +6,7 @@
 #include "spkmeans.h"
 #include <Python.h>
 
-static int execute_goal(PyObject *self, PyObject *args){  //fix memory issues
+static void execute_goal(PyObject *self, PyObject *args){  //fix memory issues
     int dim;
     int vec_num;
     char* goal;
@@ -15,13 +15,14 @@ static int execute_goal(PyObject *self, PyObject *args){  //fix memory issues
     PyObject *_points, *val;
 
     if(!PyArg_ParseTuple(args, "Os", &_points, &goal)) {   //make sure we can parse goal as char* and not pythonic object
-        return 1;
+        return;
     }
 
     if(!PyList_Check(_points)){
-        return 1;
+        return;
     }
 
+ 
     /* Get the size of it and build the output list*/
     
     vec_num = PyList_Size(_points);
@@ -39,9 +40,6 @@ static int execute_goal(PyObject *self, PyObject *args){  //fix memory issues
     }
 
     kmeans_goal(points, goal, vec_num, dim);
-
-    return 0;
-
 }
 
 static PyObject* spk_points(PyObject *self, PyObject *args)
@@ -52,6 +50,7 @@ static PyObject* spk_points(PyObject *self, PyObject *args)
     EIGEN_LINK res;
 
     PyObject *_points, *_k_ls, *val;
+
 
     if(!PyArg_ParseTuple(args, "OO", &_points, &_k_ls)) {
         return NULL;
@@ -67,7 +66,6 @@ static PyObject* spk_points(PyObject *self, PyObject *args)
     vec_num = PyList_Size(_points);
     dim = PyList_Size(PyList_GetItem(_points, 0));
 
-    
     double** points = calloc(vec_num, sizeof(double*));
     assert(points!=NULL);
     for(i=0; i<vec_num; i++){
@@ -79,12 +77,12 @@ static PyObject* spk_points(PyObject *self, PyObject *args)
         }
     }
 
-    res = get_spk_points(points, vec_num, dim, _K);
+    res = get_spk_points(points, dim, vec_num, _K);
 
     PyObject * all_points = PyList_New(vec_num);
     PyObject * vector;
     for(i=0; i<vec_num; i++){
-        vector = PyList_New(vec_num);
+        vector = PyList_New(res->k);
         for(j=0; j<res->k; j++){
 
             PyList_SetItem(vector, j, PyFloat_FromDouble(res->eigen_vectors[i][j]));
@@ -93,23 +91,22 @@ static PyObject* spk_points(PyObject *self, PyObject *args)
     }
 
     free(res);
-    
+   
     return all_points;
     
-
 }
 
-static PyObject* fit(PyObject *self, PyObject *args)
+static void fit(PyObject *self, PyObject *args)
 {
 
     PyObject *_points, *_centers, *val;
     Py_ssize_t dim, vec_num, i, j, _K;
 
     if(!PyArg_ParseTuple(args, "OO", &_points,&_centers)) {
-        return NULL;
+        return;
     }
     if(!PyList_Check(_points) || !PyList_Check(_centers)){
-        return NULL;
+        return;
     }
 
     /* Get the size of it and build the output list*/
@@ -139,7 +136,9 @@ static PyObject* fit(PyObject *self, PyObject *args)
             centers[i][j] = PyFloat_AsDouble(val);
         }
     }
+    kmeans(points, centers, vec_num, _K, 300);
 
+    /*
     double **clusters = kmeans(points, centers, vec_num, _K, 300);
 
     PyObject * final_centroids = PyList_New(_K);
@@ -155,7 +154,9 @@ static PyObject* fit(PyObject *self, PyObject *args)
 
     free(clusters);
     
+    
     return final_centroids;
+    */
 
 }
 

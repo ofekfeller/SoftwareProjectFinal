@@ -4,7 +4,7 @@ import pandas as pd
 import spkmeansmodule
 
 
-def read_csv_files_to_numpy(filename1, filename2):
+def read_csv_files_to_numpy(filename1):
 
     file = pd.read_csv(filename1, header=None)
 
@@ -40,12 +40,14 @@ def main():
     points = read_csv_files_to_numpy(filename)
 
     if goal != "spk":
-        spkmeansmodule.execute_goal(points, goal)
+        spkmeansmodule.execute_goal(points.tolist(), goal)
         return
 
     assert (_K < points.shape[0])
 
-    spk_points = spkmeansmodule.spk_points(points, [1 for i in range(_K)])
+    spk_points = spkmeansmodule.spk_points(points.tolist(), [1 for i in range(_K)])
+
+    spk_points = np.asarray(spk_points)
 
     _K = spk_points.shape[1]  # the new K is the number of columns
 
@@ -67,12 +69,12 @@ def main():
 
     centers = [center.tolist() for center in centers]
 
-    res = spkmeansmodule.fit(spk_points.tolist(), centers, [1 for i in range(300)])
+    spkmeansmodule.fit(spk_points.tolist(), centers)
 
-    res = np.round(np.array(res), decimals=4)
+    #res = np.round(np.array(res), decimals=4)
 
-    for row in res:
-        print(",".join(map(str, row)))
+    #for row in res:
+    #    print(",".join(map(str, row)))
 
 
 if __name__ == '__main__':
