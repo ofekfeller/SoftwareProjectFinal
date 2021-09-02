@@ -160,6 +160,7 @@ void print_vec(double* vec, int len){
 void print_mat(double** mat, int n, int m){
     char sign;
     int i, j;
+    double prt;
 
     for (i=0; i<n; i++){
     
@@ -167,8 +168,15 @@ void print_mat(double** mat, int n, int m){
         {
             if (j==m-1) sign='\n';
             else sign = ',';
+
+            if(mat[i][j]<0 && mat[i][j]>-0.00005){
+                prt = 0;
+            }
+            else{
+                prt = mat[i][j];
+            }
             
-            printf("%.4f%c", mat[i][j], sign);
+            printf("%.4f%c", prt, sign);
         }
     }
 
@@ -391,6 +399,7 @@ double** get_diag_mat(double* vec, int n){
             }
         }
     }
+    free(a);
     return mat;
 }
 /*
@@ -631,7 +640,7 @@ int* read_file_dimensions(char* filename){
     int flag;
     int read;
     FILE* f = fopen(filename, "r");
-	
+
     flag=0;
     vec_len=0;
     vec_num=0;
@@ -652,13 +661,10 @@ int* read_file_dimensions(char* filename){
             }
         }
         else if(read ==1){
-            if (c=='\0'){
-                if (flag==0){
-                    vec_len++;
-                    flag=1;
-                }
+            if(flag==0){
+                vec_len++;
             }
-            vec_num++;
+              vec_num++;
         }
      }
      fclose(f);
@@ -735,6 +741,7 @@ double** get_normalized_matrix(double** weighted, double* diag, int dim){
     mul_columns(weighted, diag, dim);
     eye=get_eye_mat(dim);
     normalized = matrix_sub(eye, weighted, dim);
+    free(eye[0]);
     free(eye);
     return normalized;
 }
@@ -783,6 +790,7 @@ void compute_normalized(double** mat, int dim, double c, double s, int i, int j)
 
     mat[i][j] = 0;
     mat[j][i] = 0;
+    free(copy[0]);
     free(copy);
 }
 
@@ -797,7 +805,9 @@ typedef EIGEN* EIGEN_LINK;
 EIGEN_LINK get_eigens_and_k(double** normalized, int dim, int k){  
     int* indexes;
     double temp;
+    double** V_help;
     double** V;
+    
     double** t_V;
     double** P;
     double c, s, t, theta;
@@ -812,7 +822,7 @@ EIGEN_LINK get_eigens_and_k(double** normalized, int dim, int k){
 
     ret = malloc(sizeof(EIGEN));
         
-    V = get_eye_mat(dim);
+    V_help = get_eye_mat(dim);
 
     do{
         temp = compute_off(normalized, dim);
@@ -827,9 +837,17 @@ EIGEN_LINK get_eigens_and_k(double** normalized, int dim, int k){
 
         P = create_p_matrix(s,c,i,j,dim);
 
-        V = sq_matrix_mul(V, P, dim);
-
+        V = sq_matrix_mul(V_help, P, dim);
+    
         compute_normalized(normalized,dim,c,s,i,j);
+
+        free(V_help[0]);
+        free(V_help);
+        V_help=V;
+
+        free(indexes);
+        free(P[0]);
+        free(P);
 
     } while((temp-compute_off(normalized, dim)) > epsilon);
 
@@ -849,13 +867,10 @@ EIGEN_LINK get_eigens_and_k(double** normalized, int dim, int k){
     ret->eigen_vectors = transpose(t_V, dim, dim);
     ret->eigen_values = eigen_vals;
     
-    free(indexes);
-    free(t_V[0]);
+    /*free(t_V[0]);*/
     free(t_V);
     free(V[0]);
     free(V);
-    free(P[0]);
-    free(P);
     return ret;
 }
 
@@ -1058,6 +1073,7 @@ int main(int argv, char** args){
         free(eigens->eigen_values);
         free(eigens->eigen_vectors[0]);
         free(eigens->eigen_vectors);
+        free(eigens);
         free(points[0]);
         free(points);
         free(dims);
@@ -1134,6 +1150,7 @@ int main(int argv, char** args){
     free(eigens->eigen_values);
     free(eigens->eigen_vectors[0]);
     free(eigens->eigen_vectors);
+    free(eigens);
     free(diag);
 
     return 0;
