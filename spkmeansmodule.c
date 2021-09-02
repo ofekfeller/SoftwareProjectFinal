@@ -138,6 +138,9 @@ static void fit(PyObject *self, PyObject *args)
     }
     kmeans(points, centers, vec_num, _K, 300);
 
+    free(points);
+    free(centers);
+
     /*
     double **clusters = kmeans(points, centers, vec_num, _K, 300);
 
