@@ -689,7 +689,7 @@ double** get_points_from_file(char* filename, int vec_len, int vec_num){
     int i,j;
     char c;
     double value;
-
+    int read;
 
     points = init_2d_array(vec_num, vec_len);
 
@@ -697,13 +697,17 @@ double** get_points_from_file(char* filename, int vec_len, int vec_num){
     j=0;
     f = fopen(filename, "r");
     while (!feof(f)) {
-        if(fscanf(f, "%lf%c", &value, &c) == 2){
+        read=fscanf(f, "%lf%c", &value, &c);
+        if(read == 2){
             points[i][j] = value;
             if(c == '\n'){
                 i++;
                 j=0;
             }
             if(c ==',') j++;
+        }
+        else if (read == 1){
+            points[i][j] = value;
         }
      }
     fclose(f);
@@ -733,8 +737,6 @@ double** get_normalized_matrix(double** weighted, double* diag, int dim){
     normalized = matrix_sub(eye, weighted, dim);
     free(eye);
     return normalized;
-
-
 }
 
 double** deep_copy(double** mat, int dim){
@@ -868,6 +870,9 @@ int kmeans_goal(double** points, char* goal, int vec_num, int dim){
         eigens = get_eigens_and_k(points, vec_num, vec_num);
         print_vec(eigens->eigen_values, vec_num);
         print_mat(transpose(eigens->eigen_vectors, vec_num, vec_num), vec_num, vec_num);
+        free(eigens->eigen_values);
+        free(eigens->eigen_vectors[0]);
+        free(eigens->eigen_vectors);
         free(eigens);
         return 0;
 
@@ -1050,6 +1055,12 @@ int main(int argv, char** args){
         print_mat(transp, vec_num, vec_num);
         free(transp[0]);
         free(transp);
+        free(eigens->eigen_values);
+        free(eigens->eigen_vectors[0]);
+        free(eigens->eigen_vectors);
+        free(points[0]);
+        free(points);
+        free(dims);
         return 0;
 
     }
@@ -1058,6 +1069,11 @@ int main(int argv, char** args){
 
     if(!strcmp(goal,"wam")){
         print_mat(weighted, vec_num, vec_num);
+        free(points[0]);
+        free(points);
+        free(weighted[0]);
+        free(weighted);
+        free(dims);
         return 0;
     }
 
@@ -1068,6 +1084,12 @@ int main(int argv, char** args){
         print_mat(diag_mat, vec_num, vec_num);
         free(diag_mat[0]);
         free(diag_mat);
+        free(points[0]);
+        free(points);
+        free(dims);
+        free(diag);
+        free(weighted[0]);
+        free(weighted);
         return 0;
     }
 
@@ -1076,6 +1098,14 @@ int main(int argv, char** args){
 
     if(!strcmp(goal,"lnorm")){
         print_mat(normalized, vec_num, vec_num);
+        free(points[0]);
+        free(points);
+        free(dims);
+        free(normalized[0]);
+        free(normalized);
+        free(diag);
+        free(weighted[0]);
+        free(weighted);
         return 0;
     }
 
@@ -1091,6 +1121,20 @@ int main(int argv, char** args){
     if(!strcmp(goal,"spk")){
     kmeans(eigens->eigen_vectors, centers,vec_num, k, 300);
     }
+    
+    free(dims);
+    free(weighted[0]);
+    free(weighted);
+    free(normalized[0]);
+    free(normalized);
+    free(points[0]);
+    free(points);
+    free(centers[0]);
+    free(centers);
+    free(eigens->eigen_values);
+    free(eigens->eigen_vectors[0]);
+    free(eigens->eigen_vectors);
+    free(diag);
 
     return 0;
 
